@@ -88,14 +88,19 @@ export type ThunkMiddleware<
   ThunkDispatch<TState, TExtraThunkArg, TBasicAction>
 >;
 
+export type ExtraThunkArgFactory <TState, TBasicAction extends Action<any>, TReturn> = (
+  dispatch: ThunkDispatch<TState, TReturn, TBasicAction>, getState: () => TState
+) => TReturn
+
 declare const thunk: ThunkMiddleware & {
   withExtraArgument<
-    TExtraThunkArg,
-    TState = {},
-    TBasicAction extends Action<any> = AnyAction
+    TState,
+    TBasicAction extends Action<any>,
+    TExtraFactoryReturnType,
+    TExtraThunkArg extends ExtraThunkArgFactory<TState, TBasicAction, TExtraFactoryReturnType>,
   >(
     extraArgument: TExtraThunkArg,
-  ): ThunkMiddleware<TState, TBasicAction, TExtraThunkArg>;
+  ): ThunkMiddleware<TState, TBasicAction, TExtraFactoryReturnType>;
 };
 
 export default thunk;

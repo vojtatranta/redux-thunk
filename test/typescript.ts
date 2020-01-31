@@ -105,15 +105,15 @@ store.dispatch(testGetState());
 
 const storeThunkArg = createStore(
   fakeReducer,
-  applyMiddleware(thunk.withExtraArgument('bar') as ThunkMiddleware<
+  applyMiddleware(thunk.withExtraArgument((dispatch, getState: () => State) => getState()) as ThunkMiddleware<
     State,
     Actions,
-    string
+    State
   >),
 );
 
 storeThunkArg.dispatch((dispatch, getState, extraArg) => {
-  const bar: string = extraArg;
+  const bar: State = extraArg;
   store.dispatch({ type: 'FOO' });
   // typings:expect-error
   store.dispatch({ type: 'BAR' });
@@ -121,6 +121,24 @@ storeThunkArg.dispatch((dispatch, getState, extraArg) => {
   // typings:expect-error
   store.dispatch({ type: 'BAZ' });
   console.log(extraArg);
+});
+
+storeThunkArg.dispatch((dispatch, getState, extraArg) => {
+  // typings:expect-error
+  const bar: string = extraArg;
+  const state: State = extraArg
+  const {foo} = state
+});
+
+storeThunkArg.dispatch((dispatch) => {
+  dispatch((passedDispatch, passedGetState) => {
+    // typings:expect-error
+    passedDispatch({ type: 'BAR' });
+    passedDispatch({ type: 'BAR', result: 5 })
+
+    // typings:expect-error
+    const a: string = passedGetState()
+  })
 });
 
 const callDispatchAsync_anyAction = (

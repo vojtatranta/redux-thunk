@@ -3,7 +3,9 @@ import { checkDirectory } from 'typings-tester';
 import thunkMiddleware from '../src/index';
 
 describe('thunk middleware', () => {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   const doDispatch = () => {};
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   const doGetState = () => {};
   const nextHandler = thunkMiddleware({
     dispatch: doDispatch,
@@ -72,16 +74,6 @@ describe('thunk middleware', () => {
     });
   });
 
-  describe('handle errors', () => {
-    it('must throw if argument is non-object', (done) => {
-      try {
-        thunkMiddleware();
-      } catch (err) {
-        done();
-      }
-    });
-  });
-
   describe('withExtraArgument', () => {
     it('must pass the third argument', (done) => {
       const extraArg = { lol: true };
@@ -92,6 +84,20 @@ describe('thunk middleware', () => {
         chai.assert.strictEqual(dispatch, doDispatch);
         chai.assert.strictEqual(getState, doGetState);
         chai.assert.strictEqual(arg, extraArg);
+        done();
+      });
+    });
+
+    it('must pass the result of extra argument factory', (done) => {
+      const extraArg = (dispatch, getState) => ({dispatch, getState})
+      thunkMiddleware.withExtraArgument(extraArg)({
+        dispatch: doDispatch,
+        getState: doGetState,
+      })()((dispatch, getState, arg) => {
+        chai.assert.strictEqual(dispatch, doDispatch);
+        chai.assert.strictEqual(getState, doGetState);
+        chai.assert.strictEqual(arg.dispatch, dispatch);
+        chai.assert.strictEqual(arg.getState, getState);
         done();
       });
     });
