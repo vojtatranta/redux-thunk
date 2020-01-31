@@ -1,17 +1,19 @@
 {
-  "name": "redux-thunk",
-  "version": "2.3.0",
+  "name": "redux-thunk-service",
+  "version": "0.0.1",
   "license": "MIT",
-  "description": "Thunk middleware for Redux.",
-  "repository": "github:reduxjs/redux-thunk",
-  "bugs": "https://github.com/reduxjs/redux-thunk/issues",
-  "homepage": "https://github.com/reduxjs/redux-thunk",
+  "description": "Service thunk middleware for Redux.",
+  "repository": "github.com:vojtatranta/redux-thunk",
+  "bugs": "https://github.com/vojtatranta/redux-thunk/issues",
+  "homepage": "https://github.com/vojtatranta/redux-thunk/redux-thunk",
   "keywords": [
     "redux",
     "thunk",
     "middleware",
     "redux-middleware",
-    "flux"
+    "flux",
+    "service",
+    "dependency-injection"
   ],
   "author": "Dan Abramov <dan.abramov@me.com>",
   "main": "lib/index.js",
