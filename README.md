@@ -102,6 +102,73 @@ know what to do with it so I commented it out.
 
 If you knew how to [fix this test](./test/typescript.ts#L164) please do!
 
+It seems to me that typing in the `redux-thunk` was not correct for connected
+props. Consider this:
+
+```ts
+import { connect } from 'react-redux'
+import { bindActionCreators } from 'redux'
+
+const thunkActionCreator = (): ThunkResult<Promise<void>> => (dispatch, getState) => {
+  return Promise.resolve()
+}
+
+// calling pure action creator returns a function logically
+thunkActionCreator() === fn(dispatch, getState) {}
+
+// but when dispatched, ti returns result of thunk
+dispatch(thunkActionCreator()) === Promise.resolve()
+
+// props like this should return an error
+interface Props {
+  thunkActionCreator: typeof thunkActionCreator
+}
+// And it does! But if you call bindActionCreators in the connect() it "unpacked" the action creators.
+// But this result in the problem:
+
+export function App(props: Props) {
+  // The problem
+  props.thunkActionCreator() = Promise.resolve() // Types says OK but it is wrong!! Why? Because:
+  typeof thunkActionCreator is a Function, not Promise.resolve()
+}
+
+export default connect(
+  () => ({}),
+  dispatch => bindActionCreators({ thunkActionCreator }, dispatch)
+)
+
+// other file
+
+// This is correct:
+import { connect } from 'react-redux'
+import { bindActionCreators } from 'redux'
+import { ThunkDispatchAction } from 'redux-thunk-service'
+
+const thunkActionCreator = (): ThunkResult<Promise<void>> => (dispatch, getState) => {
+  return Promise.resolve()
+}
+
+interface Props {
+  thunkActionCreator: ThunkDispatchAction<typeof thunkActionCreator>
+}
+
+export function App(props: Props) {
+  // The correct type!
+  props.thunkActionCreator() === Promise.resolve()
+}
+
+export default connect(
+  () => ({}),
+  dispatch => bindActionCreators({ thunkActionCreator }, dispatch)
+)
+```
+
+So don't forget to wrapp thunk action createor with
+`ThunkDispatchAction<typeof thunkActionCreator>`. And if this is wrong please
+file an issue and help me to fix it!
+
+Thanks
+
 ## License
 
 MIT
