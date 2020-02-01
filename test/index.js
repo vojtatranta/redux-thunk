@@ -1,13 +1,14 @@
 import chai from 'chai';
 import { checkDirectory } from 'typings-tester';
-import thunkMiddleware from '../src/index';
+import createServiceThunk from '../src/index';
 
 describe('thunk middleware', () => {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const doDispatch = () => {};
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const doGetState = () => {};
-  const nextHandler = thunkMiddleware({
+  const servicesFactory = () => ({})
+  const nextHandler = createServiceThunk(servicesFactory)({
     dispatch: doDispatch,
     getState: doGetState,
   });
@@ -75,22 +76,9 @@ describe('thunk middleware', () => {
   });
 
   describe('withExtraArgument', () => {
-    it('must pass the third argument', (done) => {
-      const extraArg = { lol: true };
-      thunkMiddleware.withExtraArgument(extraArg)({
-        dispatch: doDispatch,
-        getState: doGetState,
-      })()((dispatch, getState, arg) => {
-        chai.assert.strictEqual(dispatch, doDispatch);
-        chai.assert.strictEqual(getState, doGetState);
-        chai.assert.strictEqual(arg, extraArg);
-        done();
-      });
-    });
-
     it('must pass the result of extra argument factory', (done) => {
-      const extraArg = (dispatch, getState) => ({dispatch, getState})
-      thunkMiddleware.withExtraArgument(extraArg)({
+      const extraArgFac = (dispatch, getState) => ({dispatch, getState})
+      createServiceThunk(extraArgFac)({
         dispatch: doDispatch,
         getState: doGetState,
       })()((dispatch, getState, arg) => {
