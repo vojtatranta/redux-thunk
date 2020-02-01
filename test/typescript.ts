@@ -1,19 +1,31 @@
 import { applyMiddleware, bindActionCreators, createStore } from 'redux';
 
-import thunk, {
+import createServiceThunk, {
+  ServiceThunkMiddleware,
+  ServiceThunkActionDispatch,
   ThunkAction,
-  ThunkActionDispatch,
   ThunkDispatch,
-  ThunkMiddleware,
 } from '../src/index';
 
 type State = {
   foo: string;
 };
 
+interface Services {
+  getStateService: () => State;
+}
+
 type Actions = { type: 'FOO' } | { type: 'BAR'; result: number };
 
-type ThunkResult<R> = ThunkAction<R, State, undefined, Actions>;
+type ServicesFactory = (
+  dispatch: ThunkDispatch<State, Services, Actions>,
+  getState: () => State,
+) => Services;
+const serviceFactory: ServicesFactory = (dispatch, getState) => ({
+  getStateService: getState,
+});
+
+type ThunkResult<R> = ThunkAction<R, State, Services, Actions>;
 
 const initialState: State = {
   foo: 'foo',
@@ -25,7 +37,13 @@ function fakeReducer(state: State = initialState, action: Actions): State {
 
 const store = createStore(
   fakeReducer,
-  applyMiddleware(thunk as ThunkMiddleware<State, Actions>),
+  applyMiddleware(
+    createServiceThunk(serviceFactory) as ServiceThunkMiddleware<
+      State,
+      Actions,
+      ServicesFactory
+    >,
+  ),
 );
 
 store.dispatch((dispatch) => {
@@ -69,8 +87,8 @@ function promiseThunkAction(): ThunkResult<Promise<boolean>> {
 const standardAction = () => ({ type: 'FOO' });
 
 interface ActionDispatchs {
-  anotherThunkAction: ThunkActionDispatch<typeof anotherThunkAction>;
-  promiseThunkAction: ThunkActionDispatch<typeof promiseThunkAction>;
+  anotherThunkAction: ServiceThunkActionDispatch<typeof anotherThunkAction>;
+  promiseThunkAction: ServiceThunkActionDispatch<typeof promiseThunkAction>;
   standardAction: typeof standardAction;
 }
 
@@ -105,41 +123,60 @@ store.dispatch(testGetState());
 
 const storeThunkArg = createStore(
   fakeReducer,
-  applyMiddleware(thunk.withExtraArgument('bar') as ThunkMiddleware<
-    State,
-    Actions,
-    string
-  >),
+  applyMiddleware(
+    createServiceThunk(serviceFactory) as ServiceThunkMiddleware<
+      State,
+      Actions,
+      ServicesFactory
+    >,
+  ),
 );
 
-storeThunkArg.dispatch((dispatch, getState, extraArg) => {
-  const bar: string = extraArg;
+storeThunkArg.dispatch((dispatch, getState, services) => {
+  const bar: () => State = services.getStateService;
   store.dispatch({ type: 'FOO' });
   // typings:expect-error
   store.dispatch({ type: 'BAR' });
   store.dispatch({ type: 'BAR', result: 5 });
   // typings:expect-error
   store.dispatch({ type: 'BAZ' });
-  console.log(extraArg);
+  console.log(services);
 });
 
-const callDispatchAsync_anyAction = (
-  dispatch: ThunkDispatch<State, undefined, any>,
-) => {
-  const asyncThunk = (): ThunkResult<Promise<void>> => () =>
-    ({} as Promise<void>);
-  dispatch(asyncThunk()).then(() => console.log('done'));
-};
+storeThunkArg.dispatch((dispatch, getState, services) => {
+  // typings:expect-error
+  const bar: State = services.getStateService;
+  const state: State = services.getStateService();
+  const { foo } = state;
+});
+
+storeThunkArg.dispatch((dispatch, getState, extraArg) => {
+  dispatch((passedDispatch, passedGetState) => {
+    // typings:expect-error
+    store.dispatch({ type: 'BAR' });
+    passedDispatch({ type: 'BAR', result: 5 });
+
+    // typings:expect-error
+    const a: string = passedGetState();
+  });
+});
+
+// const callDispatchAsync_anyAction = (
+//   dispatch: ThunkDispatch<State, undefined, any>,
+// ) => {
+//   const asyncThunk = (): ThunkResult<Promise<void>> => () =>
+//     ({} as Promise<void>);
+//   dispatch(asyncThunk()).then(() => console.log('done'));
+// };
 const callDispatchAsync_specificActions = (
-  dispatch: ThunkDispatch<State, undefined, Actions>,
+  dispatch: ThunkDispatch<State, Services, Actions>,
 ) => {
   const asyncThunk = (): ThunkResult<Promise<void>> => () =>
     ({} as Promise<void>);
+
   dispatch(asyncThunk()).then(() => console.log('done'));
 };
-const callDispatchAny = (
-  dispatch: ThunkDispatch<State, undefined, Actions>,
-) => {
+const callDispatchAny = (dispatch: ThunkDispatch<State, Services, Actions>) => {
   const asyncThunk = (): any => () => ({} as Promise<void>);
   dispatch(asyncThunk()) // result is any
     .then(() => console.log('done'));

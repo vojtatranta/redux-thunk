@@ -1,14 +1,13 @@
-function createThunkMiddleware(extraArgument) {
-  return ({ dispatch, getState }) => (next) => (action) => {
-    if (typeof action === 'function') {
-      return action(dispatch, getState, extraArgument);
-    }
+import thunk from 'redux-thunk'
 
-    return next(action);
+function createServiceThunkMiddleware(extraArgumentFactory) {
+  return ({dispatch, getState}) => {
+    const normalizedExtraArgument = extraArgumentFactory(dispatch, getState)
+
+    return thunk.withExtraArgument(normalizedExtraArgument)({ dispatch, getState });
   };
 }
 
-const thunk = createThunkMiddleware();
-thunk.withExtraArgument = createThunkMiddleware;
+const createServiceThunk = createServiceThunkMiddleware
 
-export default thunk;
+export default createServiceThunk;
